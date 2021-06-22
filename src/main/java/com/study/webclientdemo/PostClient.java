@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -25,25 +26,19 @@ public class PostClient {
 
     @Autowired
     public PostClient() {
-        // Case 1. create
-//        this.webClient = WebClient.create(BASE_URL);
-
-        // Case 2. Builder
         this.webClient = WebClient.builder()
                                   .baseUrl(BASE_URL)
                                   .defaultHeader(HttpHeaders.USER_AGENT, "USER_AGENT")
-                                  // .uriBuilderFactory()      // Customized UriBuilderFactory to use as a base URL.
-                                  // .defaultUriVariables()    // default values to use when expanding URI templates.
-                                  // .defaultHeader()          // Headers for every request.
-                                  // .defaultCookie()          // Cookies for every request.
-                                  // .defaultRequest()         // Consumer to customize every request.
-                                  // .filter()                 // Client filter for every request.
-                                  // .exchangeStrategies()     // HTTP message reader/writer customizations.
-                                  // .clientConnector()        // HTTP client library settings.
+                                  .filter((request, next) -> next.exchange(request))
+                                  .filter(logRequest())
+                                  .filters(filterList -> {
+                                      filterList.add(0, logRequest());
+                                  })
                                   .build();
     }
 
     public Flux<PostModel> getPostList() {
+        // only body
         return this.webClient.get()
                              .uri("/posts")
                              .accept(MediaType.APPLICATION_JSON)
@@ -57,5 +52,16 @@ public class PostClient {
                              .accept(MediaType.APPLICATION_JSON)
                              .retrieve()
                              .bodyToMono(PostModel.class);
+    }
+
+    private ExchangeFilterFunction logRequest() {
+        return (request, next) -> {
+            System.out.println("Request: " + request.method() + ", " + request.url());
+
+            request.headers()
+                   .forEach((name, values) -> values.forEach(value -> System.out.println(name + " = " + value)));
+
+            return next.exchange(request);
+        };
     }
 }
