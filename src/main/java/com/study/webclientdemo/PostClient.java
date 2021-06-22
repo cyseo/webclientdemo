@@ -9,12 +9,13 @@ package com.study.webclientdemo;/*
 
 import com.study.webclientdemo.models.PostModel;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.util.List;
 
 @Service
 public class PostClient {
@@ -25,25 +26,20 @@ public class PostClient {
 
     @Autowired
     public PostClient() {
-        // Case 1. create
-//        this.webClient = WebClient.create(BASE_URL);
-
-        // Case 2. Builder
         this.webClient = WebClient.builder()
                                   .baseUrl(BASE_URL)
-                                  .defaultHeader(HttpHeaders.USER_AGENT, "USER_AGENT")
-                                  // .uriBuilderFactory()      // Customized UriBuilderFactory to use as a base URL.
-                                  // .defaultUriVariables()    // default values to use when expanding URI templates.
-                                  // .defaultHeader()          // Headers for every request.
-                                  // .defaultCookie()          // Cookies for every request.
-                                  // .defaultRequest()         // Consumer to customize every request.
-                                  // .filter()                 // Client filter for every request.
-                                  // .exchangeStrategies()     // HTTP message reader/writer customizations.
-                                  // .clientConnector()        // HTTP client library settings.
                                   .build();
     }
 
     public Flux<PostModel> getPostList() {
+        final List<PostModel> postList = this.webClient.get()
+                                                       .uri("/posts")
+                                                       .accept(MediaType.APPLICATION_JSON)
+                                                       .retrieve()
+                                                       .bodyToFlux(PostModel.class)
+                                                       .collectList()
+                                                       .block();    // 동기적으로 사용해야 하는 경우
+
         return this.webClient.get()
                              .uri("/posts")
                              .accept(MediaType.APPLICATION_JSON)
@@ -52,6 +48,13 @@ public class PostClient {
     }
 
     public Mono<PostModel> getPost(final Long postId) {
+        final PostModel post = this.webClient.get()
+                                             .uri("/posts/{postId}", postId)
+                                             .accept(MediaType.APPLICATION_JSON)
+                                             .retrieve()
+                                             .bodyToMono(PostModel.class)
+                                             .block();
+
         return this.webClient.get()
                              .uri("/posts/{postId}", postId)
                              .accept(MediaType.APPLICATION_JSON)
