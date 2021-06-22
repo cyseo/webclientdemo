@@ -7,14 +7,10 @@ package com.study.webclientdemo;/*
  *   @desc
  */
 
-import com.study.webclientdemo.models.PostModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 @Service
 public class PostClient {
@@ -26,7 +22,7 @@ public class PostClient {
     @Autowired
     public PostClient() {
         // Case 1. create
-//        this.webClient = WebClient.create(BASE_URL);
+        this.webClient = WebClient.create(BASE_URL);
 
         // Case 2. Builder
         this.webClient = WebClient.builder()
@@ -41,21 +37,5 @@ public class PostClient {
                                   // .exchangeStrategies()     // HTTP message reader/writer customizations.
                                   // .clientConnector()        // HTTP client library settings.
                                   .build();
-    }
-
-    public Flux<PostModel> getPostList() {
-        return this.webClient.get()
-                             .uri("/posts")
-                             .accept(MediaType.APPLICATION_JSON)
-                             .retrieve()
-                             .bodyToFlux(PostModel.class);
-    }
-
-    public Mono<PostModel> getPost(final Long postId) {
-        return this.webClient.get()
-                             .uri("/posts/{postId}", postId)
-                             .accept(MediaType.APPLICATION_JSON)
-                             .retrieve()
-                             .bodyToMono(PostModel.class);
     }
 }
