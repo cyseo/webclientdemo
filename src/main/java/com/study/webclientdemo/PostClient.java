@@ -9,9 +9,10 @@ package com.study.webclientdemo;/*
 
 import com.study.webclientdemo.models.PostModel;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -25,25 +26,13 @@ public class PostClient {
 
     @Autowired
     public PostClient() {
-        // Case 1. create
-//        this.webClient = WebClient.create(BASE_URL);
-
-        // Case 2. Builder
         this.webClient = WebClient.builder()
                                   .baseUrl(BASE_URL)
-                                  .defaultHeader(HttpHeaders.USER_AGENT, "USER_AGENT")
-                                  // .uriBuilderFactory()      // Customized UriBuilderFactory to use as a base URL.
-                                  // .defaultUriVariables()    // default values to use when expanding URI templates.
-                                  // .defaultHeader()          // Headers for every request.
-                                  // .defaultCookie()          // Cookies for every request.
-                                  // .defaultRequest()         // Consumer to customize every request.
-                                  // .filter()                 // Client filter for every request.
-                                  // .exchangeStrategies()     // HTTP message reader/writer customizations.
-                                  // .clientConnector()        // HTTP client library settings.
                                   .build();
     }
 
     public Flux<PostModel> getPostList() {
+        // only body
         return this.webClient.get()
                              .uri("/posts")
                              .accept(MediaType.APPLICATION_JSON)
@@ -57,5 +46,54 @@ public class PostClient {
                              .accept(MediaType.APPLICATION_JSON)
                              .retrieve()
                              .bodyToMono(PostModel.class);
+    }
+
+    public Mono<PostModel> addPost() {
+        return this.webClient.post()
+                             .uri("/posts")
+                             .contentType(MediaType.APPLICATION_JSON)
+                             .bodyValue(generatePost())
+                             .retrieve()
+                             .bodyToMono(PostModel.class);
+    }
+
+    public Mono<PostModel> addPostByForm() {
+        PostModel post = generatePost();
+
+        MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
+        formData.add("postId", String.valueOf(post.getPostId()));
+        formData.add("title", post.getTitle());
+        formData.add("contents", post.getContents());
+
+        return this.webClient.post()
+                             .uri("/posts")
+                             .bodyValue(formData)   // Or .body(fromFormData("k1", "v1").with("k2", "v2"))
+                             .retrieve()
+                             .bodyToMono(PostModel.class);
+    }
+
+    public void multipartExample() {
+//        MultipartBodyBuilder builder = new MultipartBodyBuilder();
+//        builder.part("fieldPart", "fieldValue");
+//        builder.part("filePart1", new FileSystemResource("...logo.png"));
+//        builder.part("jsonPart", new Person("Jason"));
+//        builder.part("myPart", part); // Part from a server request
+
+//        MultiValueMap<String, HttpEntity<?>> parts = builder.build();
+
+//        return this.webClient.post()
+//                             .uri("/posts")
+//                             .body(parts)
+//                             .retrieve()
+//                             .bodyToMono(PostModel.class);
+    }
+
+    private PostModel generatePost() {
+        long postId = (long) (Math.random() * 100);
+        return PostModel.builder()
+                        .postId(postId)
+                        .title("랜덤 글쓰기 " + postId)
+                        .contents("글을 마구 쓴다")
+                        .build();
     }
 }

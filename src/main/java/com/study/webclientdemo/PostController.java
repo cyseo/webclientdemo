@@ -9,10 +9,7 @@ package com.study.webclientdemo;/*
 
 import com.study.webclientdemo.models.PostModel;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -31,5 +28,10 @@ public class PostController {
     @GetMapping("/posts/{postId}")
     private Mono<PostModel> getPostList(@PathVariable Long postId) {
         return postClient.getPost(postId);
+    }
+
+    @PostMapping("/posts")
+    private Mono<PostModel> addPost() {
+        return postClient.addPost();
     }
 }
