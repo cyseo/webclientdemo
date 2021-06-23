@@ -32,4 +32,12 @@ public class PostController {
     private Mono<PostModel> getPostList(@PathVariable Long postId) {
         return postClient.getPost(postId);
     }
+
+    @GetMapping("/context")
+    private Mono<String> getContextTest() {
+        String key = "message";
+        return Mono.just("Hello")
+                   .flatMap(s -> Mono.deferContextual(ctx -> Mono.just(s + " " + ctx.get(key))))
+                   .contextWrite(ctx -> ctx.put(key, "World"));
+    }
 }

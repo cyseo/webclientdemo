@@ -8,6 +8,7 @@ package com.study.webclientdemo;/*
  */
 
 import com.study.webclientdemo.models.PostModel;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -19,6 +20,7 @@ import reactor.core.publisher.Mono;
 public class PostClient {
 
     private static final String BASE_URL = "http://localhost:8080";
+    private static final String KEY = "KEY";
 
     private final WebClient webClient;
 
@@ -26,18 +28,15 @@ public class PostClient {
     public PostClient() {
         this.webClient = WebClient.builder()
                                   .baseUrl(BASE_URL)
-                                  .filter((request, next) -> {
-                                      Mono.deferContextual(contextView -> {
-                                          // 약간 ThreadLocal 느낌
-                                          String value = contextView.get("postId");
+                                  .filter((request, next) ->
+                                                  Mono.deferContextual(contextView -> {
+                                                      String value = contextView.get(KEY);
 
-                                          System.out.println("컨텍스트: postId = " + value);
+                                                      System.out.println("컨텍스트 전달완료 = " + value);
 
-                                          return Mono.empty();
-                                      });
-
-                                      return next.exchange(request);
-                                  })
+                                                      return next.exchange(request);
+                                                  })
+                                  )
                                   .build();
     }
 
@@ -56,18 +55,7 @@ public class PostClient {
                              .accept(MediaType.APPLICATION_JSON)
                              .retrieve()
                              .bodyToMono(PostModel.class)
-                             .flatMap(postModel -> {
-                                 // 결과를 체이닝 하여 추가 작업을 하는 경우
-                                 postModel.setContents(postModel.getContents() + " :: 추가 작업 후 결과");
-
-                                 return Mono.just(postModel);
-                             })
-                             .contextWrite(context -> {
-                                 // 중첩된 작업에 모두 영향을 미친다.
-                                 // 따라서 체인의 가장 마지막에 위치해야한다.
-                                 context.put("postId", postId);
-
-                                 return context;
-                             });
+                             // 구독 전파되기 떄문에, 가장 아래에 있어도 밑에서 위로 전파된다.
+                             .contextWrite(context -> context.put(KEY, "ThreadLocal 등을 활용해야 했던 어떤 정보들"));
     }
 }
